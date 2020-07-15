@@ -2,20 +2,9 @@
 
 package model
 
-type NewVideo struct {
-	Title  string `json:"title"`
-	URL    string `json:"url"`
-	UserID string `json:"userId"`
-}
-
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-type Video struct {
-	ID     string `json:"id"`
-	Title  string `json:"title"`
-	URL    string `json:"url"`
-	Author *User  `json:"author"`
+type Categories struct {
+	ID          string `json:"id"`
+	ResourceURI string `json:"resource_uri"`
+	Name        string `json:"name"`
+	ShortName   string `json:"short_name"`
 }

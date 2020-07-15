@@ -35,7 +35,6 @@ type Config struct {
 }
 
 type ResolverRoot interface {
-	Mutation() MutationResolver
 	Query() QueryResolver
 }
 
@@ -43,32 +42,20 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
-	Mutation struct {
-		CreateVideo func(childComplexity int, input model.NewVideo) int
+	Categories struct {
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		ResourceURI func(childComplexity int) int
+		ShortName   func(childComplexity int) int
 	}
 
 	Query struct {
-		Videos func(childComplexity int) int
-	}
-
-	User struct {
-		ID   func(childComplexity int) int
-		Name func(childComplexity int) int
-	}
-
-	Video struct {
-		Author func(childComplexity int) int
-		ID     func(childComplexity int) int
-		Title  func(childComplexity int) int
-		URL    func(childComplexity int) int
+		Category func(childComplexity int) int
 	}
 }
 
-type MutationResolver interface {
-	CreateVideo(ctx context.Context, input model.NewVideo) (*model.Video, error)
-}
 type QueryResolver interface {
-	Videos(ctx context.Context) ([]*model.Video, error)
+	Category(ctx context.Context) ([]*model.Categories, error)
 }
 
 type executableSchema struct {
@@ -86,66 +73,40 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "Mutation.createVideo":
-		if e.complexity.Mutation.CreateVideo == nil {
+	case "Categories.id":
+		if e.complexity.Categories.ID == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_createVideo_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
+		return e.complexity.Categories.ID(childComplexity), true
 
-		return e.complexity.Mutation.CreateVideo(childComplexity, args["input"].(model.NewVideo)), true
-
-	case "Query.videos":
-		if e.complexity.Query.Videos == nil {
+	case "Categories.name":
+		if e.complexity.Categories.Name == nil {
 			break
 		}
 
-		return e.complexity.Query.Videos(childComplexity), true
+		return e.complexity.Categories.Name(childComplexity), true
 
-	case "User.id":
-		if e.complexity.User.ID == nil {
+	case "Categories.resource_uri":
+		if e.complexity.Categories.ResourceURI == nil {
 			break
 		}
 
-		return e.complexity.User.ID(childComplexity), true
+		return e.complexity.Categories.ResourceURI(childComplexity), true
 
-	case "User.name":
-		if e.complexity.User.Name == nil {
+	case "Categories.short_name":
+		if e.complexity.Categories.ShortName == nil {
 			break
 		}
 
-		return e.complexity.User.Name(childComplexity), true
+		return e.complexity.Categories.ShortName(childComplexity), true
 
-	case "Video.author":
-		if e.complexity.Video.Author == nil {
+	case "Query.category":
+		if e.complexity.Query.Category == nil {
 			break
 		}
 
-		return e.complexity.Video.Author(childComplexity), true
-
-	case "Video.id":
-		if e.complexity.Video.ID == nil {
-			break
-		}
-
-		return e.complexity.Video.ID(childComplexity), true
-
-	case "Video.title":
-		if e.complexity.Video.Title == nil {
-			break
-		}
-
-		return e.complexity.Video.Title(childComplexity), true
-
-	case "Video.url":
-		if e.complexity.Video.URL == nil {
-			break
-		}
-
-		return e.complexity.Video.URL(childComplexity), true
+		return e.complexity.Query.Category(childComplexity), true
 
 	}
 	return 0, false
@@ -164,20 +125,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			}
 			first = false
 			data := ec._Query(ctx, rc.Operation.SelectionSet)
-			var buf bytes.Buffer
-			data.MarshalGQL(&buf)
-
-			return &graphql.Response{
-				Data: buf.Bytes(),
-			}
-		}
-	case ast.Mutation:
-		return func(ctx context.Context) *graphql.Response {
-			if !first {
-				return nil
-			}
-			first = false
-			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
 			var buf bytes.Buffer
 			data.MarshalGQL(&buf)
 
@@ -212,51 +159,23 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var sources = []*ast.Source{
 	&ast.Source{Name: "graph/schema.graphqls", Input: `
-type Video {
+type Categories {
   id: ID!
-  title: String!
-  url: String!
-  author: User!
-}
-
-type User {
-  id: ID!
+  resource_uri: String!
   name: String!
+  short_name: String!
 }
 
 type Query {
-  videos: [Video!]!
+  category: [Categories!]!
 }
-
-input NewVideo {
-  title: String!
-  url: String!
-  userId: String!
-}
-
-type Mutation {
-  createVideo(input:NewVideo!): Video! 
-}`, BuiltIn: false},
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) field_Mutation_createVideo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.NewVideo
-	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalNNewVideo2githubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐNewVideo(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -308,7 +227,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Mutation_createVideo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Categories_id(ctx context.Context, field graphql.CollectedField, obj *model.Categories) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -316,23 +235,16 @@ func (ec *executionContext) _Mutation_createVideo(ctx context.Context, field gra
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Mutation",
+		Object:   "Categories",
 		Field:    field,
 		Args:     nil,
-		IsMethod: true,
+		IsMethod: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createVideo_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateVideo(rctx, args["input"].(model.NewVideo))
+		return obj.ID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -344,12 +256,114 @@ func (ec *executionContext) _Mutation_createVideo(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Video)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNVideo2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐVideo(ctx, field.Selections, res)
+	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_videos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Categories_resource_uri(ctx context.Context, field graphql.CollectedField, obj *model.Categories) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Categories",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResourceURI, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Categories_name(ctx context.Context, field graphql.CollectedField, obj *model.Categories) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Categories",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Categories_short_name(ctx context.Context, field graphql.CollectedField, obj *model.Categories) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Categories",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ShortName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_category(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -366,7 +380,7 @@ func (ec *executionContext) _Query_videos(ctx context.Context, field graphql.Col
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Videos(rctx)
+		return ec.resolvers.Query().Category(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -378,9 +392,9 @@ func (ec *executionContext) _Query_videos(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Video)
+	res := resTmp.([]*model.Categories)
 	fc.Result = res
-	return ec.marshalNVideo2ᚕᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐVideoᚄ(ctx, field.Selections, res)
+	return ec.marshalNCategories2ᚕᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategoriesᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -450,210 +464,6 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	res := resTmp.(*introspection.Schema)
 	fc.Result = res
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "User",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _User_name(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "User",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Video_id(ctx context.Context, field graphql.CollectedField, obj *model.Video) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Video",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Video_title(ctx context.Context, field graphql.CollectedField, obj *model.Video) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Video",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Title, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Video_url(ctx context.Context, field graphql.CollectedField, obj *model.Video) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Video",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.URL, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Video_author(ctx context.Context, field graphql.CollectedField, obj *model.Video) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Video",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Author, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -1711,36 +1521,6 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputNewVideo(ctx context.Context, obj interface{}) (model.NewVideo, error) {
-	var it model.NewVideo
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "title":
-			var err error
-			it.Title, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url":
-			var err error
-			it.URL, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "userId":
-			var err error
-			it.UserID, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -1749,23 +1529,34 @@ func (ec *executionContext) unmarshalInputNewVideo(ctx context.Context, obj inte
 
 // region    **************************** object.gotpl ****************************
 
-var mutationImplementors = []string{"Mutation"}
+var categoriesImplementors = []string{"Categories"}
 
-func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, mutationImplementors)
-
-	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
-		Object: "Mutation",
-	})
+func (ec *executionContext) _Categories(ctx context.Context, sel ast.SelectionSet, obj *model.Categories) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, categoriesImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("Mutation")
-		case "createVideo":
-			out.Values[i] = ec._Mutation_createVideo(ctx, field)
+			out.Values[i] = graphql.MarshalString("Categories")
+		case "id":
+			out.Values[i] = ec._Categories_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "resource_uri":
+			out.Values[i] = ec._Categories_resource_uri(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "name":
+			out.Values[i] = ec._Categories_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "short_name":
+			out.Values[i] = ec._Categories_short_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -1795,7 +1586,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "videos":
+		case "category":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -1803,7 +1594,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_videos(ctx, field)
+				res = ec._Query_category(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -1813,80 +1604,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
 			out.Values[i] = ec._Query___schema(ctx, field)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var userImplementors = []string{"User"}
-
-func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("User")
-		case "id":
-			out.Values[i] = ec._User_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "name":
-			out.Values[i] = ec._User_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var videoImplementors = []string{"Video"}
-
-func (ec *executionContext) _Video(ctx context.Context, sel ast.SelectionSet, obj *model.Video) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, videoImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Video")
-		case "id":
-			out.Values[i] = ec._Video_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "title":
-			out.Values[i] = ec._Video_title(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "url":
-			out.Values[i] = ec._Video_url(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "author":
-			out.Values[i] = ec._Video_author(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2157,57 +1874,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
-	return graphql.UnmarshalID(v)
+func (ec *executionContext) marshalNCategories2githubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategories(ctx context.Context, sel ast.SelectionSet, v model.Categories) graphql.Marshaler {
+	return ec._Categories(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalID(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
-}
-
-func (ec *executionContext) unmarshalNNewVideo2githubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐNewVideo(ctx context.Context, v interface{}) (model.NewVideo, error) {
-	return ec.unmarshalInputNewVideo(ctx, v)
-}
-
-func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
-	return graphql.UnmarshalString(v)
-}
-
-func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalString(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
-}
-
-func (ec *executionContext) marshalNUser2githubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
-	return ec._User(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._User(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNVideo2githubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐVideo(ctx context.Context, sel ast.SelectionSet, v model.Video) graphql.Marshaler {
-	return ec._Video(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNVideo2ᚕᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐVideoᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Video) graphql.Marshaler {
+func (ec *executionContext) marshalNCategories2ᚕᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategoriesᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Categories) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2231,7 +1902,7 @@ func (ec *executionContext) marshalNVideo2ᚕᚖgithubᚗcomᚋneihynocnirᚋgra
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNVideo2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐVideo(ctx, sel, v[i])
+			ret[i] = ec.marshalNCategories2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategories(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2244,14 +1915,42 @@ func (ec *executionContext) marshalNVideo2ᚕᚖgithubᚗcomᚋneihynocnirᚋgra
 	return ret
 }
 
-func (ec *executionContext) marshalNVideo2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐVideo(ctx context.Context, sel ast.SelectionSet, v *model.Video) graphql.Marshaler {
+func (ec *executionContext) marshalNCategories2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategories(ctx context.Context, sel ast.SelectionSet, v *model.Categories) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
-	return ec._Video(ctx, sel, v)
+	return ec._Categories(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
+	return graphql.UnmarshalID(v)
+}
+
+func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
+	return graphql.UnmarshalString(v)
+}
+
+func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
