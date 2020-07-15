@@ -1,5 +1,8 @@
-
 type Categories {
+  categories: [Category]
+}
+
+type Category {
   id: ID!
   resource_uri: String!
   name: String!
@@ -7,5 +10,5 @@ type Categories {
 }
 
 type Query {
-  category: [Categories!]!
+  findCategories: Categories!
 }

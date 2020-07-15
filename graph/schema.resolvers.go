@@ -5,14 +5,36 @@ package graph
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"os"
 
 	"github.com/neihynocnir/graphql-server/graph/generated"
 	"github.com/neihynocnir/graphql-server/graph/model"
 )
 
-func (r *queryResolver) Category(ctx context.Context) ([]*model.Categories, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) FindCategories(ctx context.Context) (*model.Categories, error) {
+
+	baseURL := os.Getenv("BASE_URL")
+	token := os.Getenv("TOKEN")
+
+	resp, err := http.Get(baseURL + `?token=` + token)
+	if err != nil {
+		print(err)
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		print(err)
+	}
+
+	err = json.Unmarshal(body, &r.categories)
+	if err != nil {
+		print(err)
+	}
+
+	return r.categories, nil
 }
 
 // Query returns generated.QueryResolver implementation.

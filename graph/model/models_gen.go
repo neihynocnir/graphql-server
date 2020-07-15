@@ -3,6 +3,10 @@
 package model
 
 type Categories struct {
+	Categories []*Category `json:"categories"`
+}
+
+type Category struct {
 	ID          string `json:"id"`
 	ResourceURI string `json:"resource_uri"`
 	Name        string `json:"name"`

@@ -43,6 +43,10 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Categories struct {
+		Categories func(childComplexity int) int
+	}
+
+	Category struct {
 		ID          func(childComplexity int) int
 		Name        func(childComplexity int) int
 		ResourceURI func(childComplexity int) int
@@ -50,12 +54,12 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Category func(childComplexity int) int
+		FindCategories func(childComplexity int) int
 	}
 }
 
 type QueryResolver interface {
-	Category(ctx context.Context) ([]*model.Categories, error)
+	FindCategories(ctx context.Context) (*model.Categories, error)
 }
 
 type executableSchema struct {
@@ -73,40 +77,47 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "Categories.id":
-		if e.complexity.Categories.ID == nil {
+	case "Categories.categories":
+		if e.complexity.Categories.Categories == nil {
 			break
 		}
 
-		return e.complexity.Categories.ID(childComplexity), true
+		return e.complexity.Categories.Categories(childComplexity), true
 
-	case "Categories.name":
-		if e.complexity.Categories.Name == nil {
+	case "Category.id":
+		if e.complexity.Category.ID == nil {
 			break
 		}
 
-		return e.complexity.Categories.Name(childComplexity), true
+		return e.complexity.Category.ID(childComplexity), true
 
-	case "Categories.resource_uri":
-		if e.complexity.Categories.ResourceURI == nil {
+	case "Category.name":
+		if e.complexity.Category.Name == nil {
 			break
 		}
 
-		return e.complexity.Categories.ResourceURI(childComplexity), true
+		return e.complexity.Category.Name(childComplexity), true
 
-	case "Categories.short_name":
-		if e.complexity.Categories.ShortName == nil {
+	case "Category.resource_uri":
+		if e.complexity.Category.ResourceURI == nil {
 			break
 		}
 
-		return e.complexity.Categories.ShortName(childComplexity), true
+		return e.complexity.Category.ResourceURI(childComplexity), true
 
-	case "Query.category":
-		if e.complexity.Query.Category == nil {
+	case "Category.short_name":
+		if e.complexity.Category.ShortName == nil {
 			break
 		}
 
-		return e.complexity.Query.Category(childComplexity), true
+		return e.complexity.Category.ShortName(childComplexity), true
+
+	case "Query.findCategories":
+		if e.complexity.Query.FindCategories == nil {
+			break
+		}
+
+		return e.complexity.Query.FindCategories(childComplexity), true
 
 	}
 	return 0, false
@@ -158,8 +169,11 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	&ast.Source{Name: "graph/schema.graphqls", Input: `
-type Categories {
+	&ast.Source{Name: "graph/schema.graphqls", Input: `type Categories {
+  categories: [Category]
+}
+
+type Category {
   id: ID!
   resource_uri: String!
   name: String!
@@ -167,7 +181,7 @@ type Categories {
 }
 
 type Query {
-  category: [Categories!]!
+  findCategories: Categories!
 }
 `, BuiltIn: false},
 }
@@ -227,7 +241,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Categories_id(ctx context.Context, field graphql.CollectedField, obj *model.Categories) (ret graphql.Marshaler) {
+func (ec *executionContext) _Categories_categories(ctx context.Context, field graphql.CollectedField, obj *model.Categories) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -236,6 +250,37 @@ func (ec *executionContext) _Categories_id(ctx context.Context, field graphql.Co
 	}()
 	fc := &graphql.FieldContext{
 		Object:   "Categories",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Categories, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Category)
+	fc.Result = res
+	return ec.marshalOCategory2ᚕᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategory(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Category_id(ctx context.Context, field graphql.CollectedField, obj *model.Category) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Category",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -261,7 +306,7 @@ func (ec *executionContext) _Categories_id(ctx context.Context, field graphql.Co
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Categories_resource_uri(ctx context.Context, field graphql.CollectedField, obj *model.Categories) (ret graphql.Marshaler) {
+func (ec *executionContext) _Category_resource_uri(ctx context.Context, field graphql.CollectedField, obj *model.Category) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -269,7 +314,7 @@ func (ec *executionContext) _Categories_resource_uri(ctx context.Context, field 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Categories",
+		Object:   "Category",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -295,7 +340,7 @@ func (ec *executionContext) _Categories_resource_uri(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Categories_name(ctx context.Context, field graphql.CollectedField, obj *model.Categories) (ret graphql.Marshaler) {
+func (ec *executionContext) _Category_name(ctx context.Context, field graphql.CollectedField, obj *model.Category) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -303,7 +348,7 @@ func (ec *executionContext) _Categories_name(ctx context.Context, field graphql.
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Categories",
+		Object:   "Category",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -329,7 +374,7 @@ func (ec *executionContext) _Categories_name(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Categories_short_name(ctx context.Context, field graphql.CollectedField, obj *model.Categories) (ret graphql.Marshaler) {
+func (ec *executionContext) _Category_short_name(ctx context.Context, field graphql.CollectedField, obj *model.Category) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -337,7 +382,7 @@ func (ec *executionContext) _Categories_short_name(ctx context.Context, field gr
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "Categories",
+		Object:   "Category",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -363,7 +408,7 @@ func (ec *executionContext) _Categories_short_name(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_category(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_findCategories(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -380,7 +425,7 @@ func (ec *executionContext) _Query_category(ctx context.Context, field graphql.C
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Category(rctx)
+		return ec.resolvers.Query().FindCategories(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -392,9 +437,9 @@ func (ec *executionContext) _Query_category(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Categories)
+	res := resTmp.(*model.Categories)
 	fc.Result = res
-	return ec.marshalNCategories2ᚕᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategoriesᚄ(ctx, field.Selections, res)
+	return ec.marshalNCategories2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategories(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1540,23 +1585,47 @@ func (ec *executionContext) _Categories(ctx context.Context, sel ast.SelectionSe
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Categories")
+		case "categories":
+			out.Values[i] = ec._Categories_categories(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var categoryImplementors = []string{"Category"}
+
+func (ec *executionContext) _Category(ctx context.Context, sel ast.SelectionSet, obj *model.Category) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, categoryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Category")
 		case "id":
-			out.Values[i] = ec._Categories_id(ctx, field, obj)
+			out.Values[i] = ec._Category_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "resource_uri":
-			out.Values[i] = ec._Categories_resource_uri(ctx, field, obj)
+			out.Values[i] = ec._Category_resource_uri(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "name":
-			out.Values[i] = ec._Categories_name(ctx, field, obj)
+			out.Values[i] = ec._Category_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "short_name":
-			out.Values[i] = ec._Categories_short_name(ctx, field, obj)
+			out.Values[i] = ec._Category_short_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -1586,7 +1655,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "category":
+		case "findCategories":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -1594,7 +1663,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_category(ctx, field)
+				res = ec._Query_findCategories(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -1876,43 +1945,6 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 
 func (ec *executionContext) marshalNCategories2githubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategories(ctx context.Context, sel ast.SelectionSet, v model.Categories) graphql.Marshaler {
 	return ec._Categories(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNCategories2ᚕᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategoriesᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Categories) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNCategories2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategories(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
 }
 
 func (ec *executionContext) marshalNCategories2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategories(ctx context.Context, sel ast.SelectionSet, v *model.Categories) graphql.Marshaler {
@@ -2200,6 +2232,57 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
+}
+
+func (ec *executionContext) marshalOCategory2githubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategory(ctx context.Context, sel ast.SelectionSet, v model.Category) graphql.Marshaler {
+	return ec._Category(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOCategory2ᚕᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategory(ctx context.Context, sel ast.SelectionSet, v []*model.Category) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCategory2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategory(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOCategory2ᚖgithubᚗcomᚋneihynocnirᚋgraphqlᚑserverᚋgraphᚋmodelᚐCategory(ctx context.Context, sel ast.SelectionSet, v *model.Category) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Category(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
