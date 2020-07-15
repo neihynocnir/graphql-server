@@ -5,33 +5,39 @@ package graph
 
 import (
 	"context"
-	"fmt"
-	"math/rand"
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"os"
 
 	"github.com/neihynocnir/graphql-server/graph/generated"
 	"github.com/neihynocnir/graphql-server/graph/model"
 )
 
-func (r *mutationResolver) CreateVideo(ctx context.Context, input model.NewVideo) (*model.Video, error) {
-	video := &model.Video{
-		ID:     fmt.Sprintf("T%d", rand.Int()),
-		Title:  input.Title,
-		URL:    input.URL,
-		Author: &model.User{ID: input.UserID, Name: "user " + input.UserID},
+func (r *queryResolver) FindCategories(ctx context.Context) (*model.Categories, error) {
+
+	baseURL := os.Getenv("BASE_URL")
+	token := os.Getenv("TOKEN")
+
+	resp, err := http.Get(baseURL + `?token=` + token)
+	if err != nil {
+		print(err)
 	}
-	r.videos = append(r.videos, video)
-	return video, nil
-}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		print(err)
+	}
 
-func (r *queryResolver) Videos(ctx context.Context) ([]*model.Video, error) {
-	return r.videos, nil
-}
+	err = json.Unmarshal(body, &r.categories)
+	if err != nil {
+		print(err)
+	}
 
-// Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+	return r.categories, nil
+}
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
-type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

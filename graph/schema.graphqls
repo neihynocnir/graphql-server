@@ -1,26 +1,14 @@
-
-type Video {
-  id: ID!
-  title: String!
-  url: String!
-  author: User!
+type Categories {
+  categories: [Category]
 }
 
-type User {
+type Category {
   id: ID!
+  resource_uri: String!
   name: String!
+  short_name: String!
 }
 
 type Query {
-  videos: [Video!]!
-}
-
-input NewVideo {
-  title: String!
-  url: String!
-  userId: String!
-}
-
-type Mutation {
-  createVideo(input:NewVideo!): Video! 
+  findCategories: Categories!
 }
