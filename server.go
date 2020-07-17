@@ -13,7 +13,7 @@ import (
 	"github.com/neihynocnir/graphql-server/graph/generated"
 )
 
-const defaultPort = "8080"
+const defaultPort = "3030"
 
 func main() {
 
